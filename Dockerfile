@@ -16,11 +16,18 @@ RUN npm install --ignore-scripts
 # ── Stage 3: build the Vite frontend ─────────────────────────
 # VITE_* vars are public (anon key + project URL) and baked into
 # the JS bundle at build time by Vite.  Pass them as build args.
+#
+# IMPORTANT: Docker ARG values are NOT automatically visible as environment
+# variables to RUN commands.  The ENV lines below promote each ARG into the
+# build environment so that `vite build` (which reads process.env.VITE_*)
+# can substitute them into the bundle via import.meta.env.VITE_*.
 FROM deps-client AS build-client
 WORKDIR /app/client
 COPY client/ ./
 ARG VITE_SUPABASE_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 RUN npm run build
 
 # ── Stage 4: lean runtime image ──────────────────────────────
