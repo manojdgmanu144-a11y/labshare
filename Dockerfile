@@ -5,10 +5,13 @@ COPY server/package*.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 # ── Stage 2: install client deps ─────────────────────────────
-FROM node:20-slim AS deps-client
+# Vite 8 + @vitejs/plugin-react 6 require Node >= 22.
+FROM node:22-slim AS deps-client
 WORKDIR /app/client
 COPY client/package*.json ./
-RUN npm ci --ignore-scripts
+# Use npm install (not npm ci) so npm can regenerate any Linux-specific
+# optional native entries that may be absent from a Windows-generated lockfile.
+RUN npm install --ignore-scripts
 
 # ── Stage 3: build the Vite frontend ─────────────────────────
 # VITE_* vars are public (anon key + project URL) and baked into
