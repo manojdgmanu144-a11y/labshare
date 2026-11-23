@@ -1,5 +1,5 @@
 # ── Stage 1: install server production deps ──────────────────
-FROM node:20-slim AS deps-server
+FROM node:22-slim AS deps-server
 WORKDIR /app/server
 COPY server/package*.json ./
 RUN npm ci --omit=dev --ignore-scripts
@@ -24,7 +24,7 @@ ARG VITE_SUPABASE_ANON_KEY
 RUN npm run build
 
 # ── Stage 4: lean runtime image ──────────────────────────────
-FROM node:20-slim AS runtime
+FROM node:22-slim AS runtime
 
 # Run as non-root for Cloud Run security best-practice
 RUN addgroup --system --gid 1001 appgroup \
