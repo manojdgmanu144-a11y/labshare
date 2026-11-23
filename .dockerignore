@@ -1,0 +1,33 @@
+# Version control
+.git
+.gitignore
+
+# Source node_modules (never copy these — stages install their own)
+node_modules
+server/node_modules
+client/node_modules
+
+# Client source (the build output is copied from the build stage)
+client/src
+client/public
+client/index.html
+client/vite.config.js
+
+# Dev / test artifacts
+client/dist
+server/tests
+coverage
+*.log
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Docker itself
+Dockerfile
+.dockerignore
+
+# Docs / misc
+README.md
+supabase
