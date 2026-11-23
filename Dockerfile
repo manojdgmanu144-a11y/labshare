@@ -11,9 +11,13 @@ COPY client/package*.json ./
 RUN npm ci --ignore-scripts
 
 # ── Stage 3: build the Vite frontend ─────────────────────────
+# VITE_* vars are public (anon key + project URL) and baked into
+# the JS bundle at build time by Vite.  Pass them as build args.
 FROM deps-client AS build-client
 WORKDIR /app/client
 COPY client/ ./
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
 RUN npm run build
 
 # ── Stage 4: lean runtime image ──────────────────────────────

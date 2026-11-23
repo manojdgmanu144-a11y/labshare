@@ -181,7 +181,7 @@ All tests use Node's built-in `node:test` runner — no extra test dependencies.
 ```bash
 cd server
 npm test
-# 93 tests, 22 suites, 0 failures
+# 119 tests, 29 suites, 0 failures
 ```
 
 Test files:
@@ -198,27 +198,43 @@ Test files:
 
 ## Deploying to Cloud Run
 
+### Fast path — `--source .` (Cloud Build, no local Docker needed)
+
+The Vite client build requires two **public** values baked into the JS bundle at
+build time (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). These are **not
+secrets** (they are the same values every browser user would see), so it is
+safe to pass them as `--build-arg`. The server secrets (`SUPABASE_SERVICE_KEY`,
+`GEMINI_API_KEY`) are injected at runtime only and never appear in the image.
+
 ```bash
-# 1. Build and push
-gcloud builds submit \
-  --tag gcr.io/YOUR_PROJECT_ID/labshare:latest .
-
-# 2. Create secrets (once)
-echo -n "https://..." | gcloud secrets create SUPABASE_URL      --data-file=-
-echo -n "..."          | gcloud secrets create SUPABASE_SERVICE_KEY --data-file=-
-echo -n "..."          | gcloud secrets create GEMINI_API_KEY    --data-file=-
-
-# 3. Deploy
 gcloud run deploy labshare \
-  --image gcr.io/YOUR_PROJECT_ID/labshare:latest \
-  --platform managed \
-  --region us-central1 \
-  --port 8080 \
+  --source . \
+  --region asia-south1 \
   --allow-unauthenticated \
-  --set-secrets "SUPABASE_URL=SUPABASE_URL:latest,\
-SUPABASE_SERVICE_KEY=SUPABASE_SERVICE_KEY:latest,\
-GEMINI_API_KEY=GEMINI_API_KEY:latest" \
-  --set-env-vars "NODE_ENV=production,CLIENT_ORIGIN=https://labshare-XXXX-uc.a.run.app"
+  --build-env-vars "VITE_SUPABASE_URL=https://YOUR.supabase.co,VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY" \
+  --set-env-vars "NODE_ENV=production,SUPABASE_URL=https://YOUR.supabase.co,SUPABASE_SERVICE_KEY=YOUR_SERVICE_KEY,GEMINI_API_KEY=YOUR_GEMINI_KEY,GEMINI_MODEL=gemini-2.5-flash"
+```
+
+> **Tip:** replace `YOUR.*` values with real credentials before running.
+> `SUPABASE_SERVICE_KEY` and `GEMINI_API_KEY` are runtime-only and never baked
+> into the image. For production use `--set-secrets` instead (see below).
+
+### Secret Manager path (recommended for production)
+
+```bash
+# 1. Create secrets once
+echo -n "https://YOUR.supabase.co" | gcloud secrets create SUPABASE_URL         --data-file=-
+echo -n "YOUR_SERVICE_KEY"          | gcloud secrets create SUPABASE_SERVICE_KEY  --data-file=-
+echo -n "YOUR_GEMINI_KEY"           | gcloud secrets create GEMINI_API_KEY        --data-file=-
+
+# 2. Deploy with --source, passing only the public build-time vars inline
+gcloud run deploy labshare \
+  --source . \
+  --region asia-south1 \
+  --allow-unauthenticated \
+  --build-env-vars "VITE_SUPABASE_URL=https://YOUR.supabase.co,VITE_SUPABASE_ANON_KEY=YOUR_ANON_KEY" \
+  --set-secrets "SUPABASE_URL=SUPABASE_URL:latest,SUPABASE_SERVICE_KEY=SUPABASE_SERVICE_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest" \
+  --set-env-vars "NODE_ENV=production,GEMINI_MODEL=gemini-2.5-flash"
 ```
 
 Secrets are mounted as environment variables at container start — they never

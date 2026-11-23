@@ -2,24 +2,21 @@
 .git
 .gitignore
 
-# Source node_modules (never copy these � stages install their own)
+# Source node_modules (never copy these — stages install their own)
 node_modules
 server/node_modules
 client/node_modules
 
-# Client source (the build output is copied from the build stage)
-client/src
-client/public
-client/index.html
-client/vite.config.js
-
 # Dev / test artifacts
+# Note: client/src and client/public are intentionally NOT excluded here.
+# The build-client stage (npm run build) needs them to compile the SPA.
+# client/dist is excluded because it is generated inside the build stage.
 client/dist
 server/tests
 coverage
 *.log
 
-# Secrets
+# Secrets — never bake .env files into the image
 .env
 .env.*
 !.env.example
